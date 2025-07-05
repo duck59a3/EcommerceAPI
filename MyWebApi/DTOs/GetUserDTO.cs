@@ -1,0 +1,13 @@
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace MyWebApi.DTOs
+{
+    public record GetUserDTO(int Id,
+        [Required] string Name,
+        [Required] string PhoneNumber,
+        [Required, EmailAddress] string Email,
+        [Required] string Address,
+        [Required] string Role
+        );
+    
+}

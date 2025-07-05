@@ -1,0 +1,31 @@
+﻿using Microsoft.EntityFrameworkCore;
+using MyWebApi.Models;
+
+namespace MyWebApi.Data
+{
+    public class ApplicationDbContext : DbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
+        {
+        }
+        
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+             modelBuilder.Entity<Category>().HasData(
+                new Category { Id = 1, Name = "Electronics", Description = "Devices and gadgets" },
+                new Category { Id = 2, Name = "Books", Description = "Literature and educational materials" },
+                new Category { Id = 3, Name = "Clothing", Description = "Apparel and accessories" }
+            );
+
+                
+            
+
+
+        }
+        public DbSet<Category> Categories { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<AppUser> Users { get; set; }
+    }
+}
