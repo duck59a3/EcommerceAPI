@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.IdentityModel.Tokens;
 using MyWebApi.DTOs;
+using MyWebApi.DTOs.Requests;
 using MyWebApi.Logs;
 using MyWebApi.Models;
 using MyWebApi.Repository;

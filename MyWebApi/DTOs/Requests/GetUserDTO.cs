@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MyWebApi.DTOs
+namespace MyWebApi.DTOs.Requests
 {
     public record GetUserDTO(int Id,
         [Required] string Name,

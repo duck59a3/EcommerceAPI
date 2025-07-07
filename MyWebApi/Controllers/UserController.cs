@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyWebApi.DTOs;
+using MyWebApi.DTOs.Requests;
 using MyWebApi.Responses;
 using MyWebApi.Services.IService;
 

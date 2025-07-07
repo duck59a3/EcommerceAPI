@@ -1,4 +1,4 @@
-﻿namespace MyWebApi.DTOs
+﻿namespace MyWebApi.DTOs.Requests
 {
     public record LoginDTO(
         string Email,
