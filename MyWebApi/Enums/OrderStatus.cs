@@ -8,6 +8,6 @@
         Shipping = 4, //Đang giao hàng
         Delivered = 5, //Đã giao hàng
         Cancelled = 6, //Đã hủy
-        Returned = 7 //Đã hoàn hàng
+        Returned = 7 //Đã hoàn 
     }
 }
