@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyWebApi.Data;
 using MyWebApi.Repository.IRepository;
+using MyWebApi.Services;
 using MyWebApi.Services.IService;
 
 namespace MyWebApi.Repository
@@ -11,6 +12,10 @@ namespace MyWebApi.Repository
         private readonly Dictionary<Type, object> _repositories = new();
         public IUserRepository Users { get; private set; }
         public ICartRepository Carts { get; private set; }
+        public IOrderRepository Orders { get; private set; }
+        public IProductImageRepository ProductImages { get; private set; }
+        public IPaymentRepository Payments { get; private set; }
+        public IReviewRepository Reviews { get; private set; }
         //public ICategoryRepository Category { get; private set; }
         //public IProductRepository Product { get; private set; }
         public UnitOfWork(ApplicationDbContext db)
@@ -19,7 +24,11 @@ namespace MyWebApi.Repository
             //Category = new CategoryRepository(_db);
             //Product = new ProductRepository(_db);
             Users = new UserRepository(_db);
+            Orders = new OrderRepository(_db);
             Carts = new CartRepository(_db);
+            Payments = new PaymentRepository(_db);
+            ProductImages = new ProductImageRepository(_db);
+            Reviews = new ReviewRepository(_db);
         }
 
        

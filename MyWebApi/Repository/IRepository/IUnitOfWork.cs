@@ -7,6 +7,10 @@ namespace MyWebApi.Repository.IRepository
         IRepository<T> Repository<T>() where T : class;
         IUserRepository Users { get; }
         ICartRepository Carts { get; }
+        IOrderRepository Orders { get; }
+        IPaymentRepository Payments { get; }
+        IProductImageRepository ProductImages { get; }
+        IReviewRepository Reviews { get; }
         Task SaveAsync();
     }
 }

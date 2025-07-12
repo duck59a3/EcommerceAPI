@@ -13,6 +13,11 @@ namespace MyWebApi.Repository
             _db = db;
         }
 
+        public async Task<Product> GetProductById(int id)
+        {
+            return await _db.Products.FirstOrDefaultAsync(x => x.Id == id);
+        }
+
         public Task UpdateAsync(Product entity)
         {
             _db.Products.Update(entity);

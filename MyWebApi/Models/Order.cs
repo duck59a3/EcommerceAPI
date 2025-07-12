@@ -1,4 +1,5 @@
 ﻿using MyWebApi.Enums;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MyWebApi.Models
@@ -17,6 +18,8 @@ namespace MyWebApi.Models
         public string PaymentMethod { get; set; }
         public PaymentStatus PaymentStatus { get; set; }
         public string Notes { get; set; }
+        public string? SessionId { get; set; }
+        public string? paymentIntentId { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
         public List<OrderDetail> Items { get; set; } = new List<OrderDetail>();

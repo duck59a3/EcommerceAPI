@@ -10,6 +10,7 @@ namespace MyWebApi.Models
         [ForeignKey("CartId")]
         public Cart Cart { get; set; } // Navigation property
         public int ProductId { get; set; } // Foreign key to the Product table
+        public string ProductName { get; set; }
 
         [ForeignKey("ProductId")]
         public Product Product { get; set; } // Navigation property

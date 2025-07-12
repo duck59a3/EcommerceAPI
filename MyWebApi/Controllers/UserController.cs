@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using MyWebApi.DTOs;
 using MyWebApi.DTOs.Requests;
@@ -12,9 +13,21 @@ namespace MyWebApi.Controllers
     public class UserController : ControllerBase
     {
         private readonly IAppUser _userService;
-        public UserController(IAppUser userService)
+        private readonly IEmailService _emailService;
+        public UserController(IAppUser userService, IEmailService emailService)
         {
             _userService = userService;
+            _emailService = emailService;
+        }
+        [HttpGet("test-auth-header")]
+        public IActionResult TestHeader()
+        {
+            if (!Request.Headers.TryGetValue("Authorization", out var authHeader))
+            {
+                return BadRequest("❌ Không tìm thấy header Authorization");
+            }
+
+            return Ok($"✅ Header: {authHeader}");
         }
         [HttpPost("register")]
         public async Task<ActionResult<Response>> Register(AppUserDTO appUserDTO)
@@ -61,6 +74,12 @@ namespace MyWebApi.Controllers
                 return NotFound(new Response(false, "Không có người dùng nào"));
             }
             return Ok(users);
+        }
+        [HttpPost("send-test-email")]
+        public async Task<IActionResult> SendTestEmail()
+        {
+            await _emailService.SendEmailAsync("duck59a3@gmail.com", "Test Email", "<h3>Đơn hàng đã được xác nhận!</h3>");
+            return Ok("Đã gửi email");
         }
     }
 }

@@ -7,6 +7,7 @@ namespace MyWebApi.DTOs.Requests
         [Required] string PhoneNumber,
         [Required, EmailAddress] string Email,
         [Required] string Address,
+        [Required] string City,
         [Required] string Role
         );
     

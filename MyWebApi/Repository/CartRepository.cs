@@ -15,7 +15,8 @@ namespace MyWebApi.Repository
 
         public async Task<Cart> GetCartByUserIdAsync(int userId)
         {
-            return await _db.Carts.Include(c => c.CartItems)
+            return await _db.Carts.Include(u => u.AppUser)
+                                  .Include(c => c.CartItems)
                                   .ThenInclude(ci => ci.Product)
                                   .FirstOrDefaultAsync(c => c.UserId == userId);
         }

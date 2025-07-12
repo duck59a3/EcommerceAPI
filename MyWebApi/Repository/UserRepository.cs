@@ -48,6 +48,7 @@ namespace MyWebApi.Repository
                 Email = user.Email,
                 PhoneNumber = user.PhoneNumber,
                 Address = user.Address,
+                City = user.City,
                 Role = user.Role,
             } : null!;
         }

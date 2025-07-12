@@ -10,7 +10,7 @@ namespace MyWebApi.DI
         {
             // Configure JWT authentication
             services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer("Bearer", options =>
+                .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
                 {
                     var key = Encoding.UTF8.GetBytes(configuration.GetSection("Authentication:Key").Value!);
                     string issuer = configuration.GetSection("Authentication:Issuer").Value!;   

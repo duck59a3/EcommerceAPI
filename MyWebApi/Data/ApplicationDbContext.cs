@@ -17,7 +17,9 @@ namespace MyWebApi.Data
                 new Category { Id = 1, Name = "Electronics", Description = "Devices and gadgets" },
                 new Category { Id = 2, Name = "Books", Description = "Literature and educational materials" },
                 new Category { Id = 3, Name = "Clothing", Description = "Apparel and accessories" }
+            
             );
+            
 
                 
             
@@ -31,5 +33,8 @@ namespace MyWebApi.Data
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails{ get; set; }
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<Review> Reviews { get; set; }
     }
 }

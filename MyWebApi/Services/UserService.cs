@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using MyWebApi.DTOs;
 using MyWebApi.DTOs.Requests;
@@ -35,9 +37,10 @@ namespace MyWebApi.Services
                 return list.Select(user => new GetUserDTO(
                     user.Id,
                     user.Name!,
-                    user.Email!,
                     user.PhoneNumber!,
+                    user.Email!,
                     user.Address!,
+                    user.City!,
                     user.Role!
                 )).ToList();
 
@@ -57,9 +60,10 @@ namespace MyWebApi.Services
             return userEntity is not null ? new GetUserDTO(
                 userEntity.Id,
                 userEntity.Name!,
-                userEntity.Email!,
                 userEntity.PhoneNumber!,
+                userEntity.Email!,
                 userEntity.Address!,
+                userEntity.City!,
                 userEntity.Role!
             ) : null!;
         }
@@ -89,12 +93,9 @@ namespace MyWebApi.Services
             {
                 new (ClaimTypes.Name, user.Name),
                 new (ClaimTypes.Email, user.Email!),
-                
+                new(ClaimTypes.Role, user.Role!),
+
             };
-            if (string.IsNullOrEmpty(user.Role) || !Equals("string", user.Role))
-            {
-                claims.Add(new(ClaimTypes.Role, user.Role));
-            }
             var token = new JwtSecurityToken(
                 issuer: _configuration["Authentication:Issuer"],
                 audience: _configuration["Authentication:Audience"],
@@ -102,7 +103,14 @@ namespace MyWebApi.Services
                 expires: DateTime.UtcNow.AddHours(1),
                 signingCredentials: credentials
             );
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            Console.WriteLine("Generating token for user: " + user.Email);
+            Console.WriteLine("User Role: " + user.Role);
+            Console.WriteLine("JWT Key: " + _configuration["Authentication:Key"]);
+            Console.WriteLine("Token sinh ra: " + token);
+             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+            Console.WriteLine("JWT Token: " + jwt); // 👈 phải in ra được token JWT
+            return jwt;
+
         }
 
         public async Task<Response> Register(AppUserDTO appUserDTO)
@@ -118,10 +126,12 @@ namespace MyWebApi.Services
                 Email = appUserDTO.Email,
                 PhoneNumber = appUserDTO.PhoneNumber,
                 Address = appUserDTO.Address,
-                Role = appUserDTO.Role,
+                City = appUserDTO.City,
+                Role = "Customer", // Mặc định là Customer, có thể thay đổi nếu cần
                 Password = BCrypt.Net.BCrypt.HashPassword(appUserDTO.Password)
 
             });
+
             await _unitOfWork.SaveAsync();
             return newUser.Id > 0
                 ? new Response(true, "Đăng ký thành công")

@@ -28,7 +28,7 @@ namespace MyWebApi.Services
             try
             {
                 var cart = await _repository.GetCartByUserIdAsync(userId);
-                var product = await _productRepository.GetByIdAsync(request.productId);
+                var product = await _productRepository.GetProductById(request.productId);
                 if (product == null)
                 {
                     return new Response(false, "Sản phẩm không tồn tại");
@@ -42,7 +42,7 @@ namespace MyWebApi.Services
                     cart = new Cart
                     {
                         UserId = userId,
-                        CreatedAt = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow
                     };
                     await _repository.AddAsync(cart);
                     await _unitOfWork.SaveAsync();
@@ -52,6 +52,8 @@ namespace MyWebApi.Services
                 {
                     existingItem.Quantity += request.Quantity;
                     existingItem.Price = existingItem.Product.Price * existingItem.Quantity;
+                    
+                   
                 }
                 else
                 {
@@ -61,17 +63,20 @@ namespace MyWebApi.Services
                         ProductId = request.productId,
                         CartId = cart.Id,
                         Quantity = request.Quantity,
-                        Price = product.Price * request.Quantity
+                        Price = product.Price * request.Quantity,
+                        ProductName = product.Name,
+                        
                     };
                     cart.CartItems.Add(cartItem);
                 }
+                cart.TotalPrice = cart.CartItems.Sum(item => item.Price);
                 await _unitOfWork.SaveAsync();
                 return new Response(true, "Thêm sản phẩm vào giỏ hàng thành công");
             }
             catch (Exception ex)
             {
                 LogException.LogExceptions(ex);
-                return new Response(false, "Lỗi khi thêm sản phẩm vào giỏ hàng");
+                return new Response(false, $"Lỗi khi thêm sản phẩm vào giỏ hàng {ex.Message}");
             }
         }
 

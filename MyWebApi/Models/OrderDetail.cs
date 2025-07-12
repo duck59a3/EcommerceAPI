@@ -9,6 +9,7 @@ namespace MyWebApi.Models
         [ForeignKey("OrderId")]
         public Order Order { get; set; }
         public int ProductId { get; set; }
+        public string ProductName { get; set; } // Tên sản phẩm
         [ForeignKey("ProductId")]
         public Product Product { get; set; }
         public int Count { get; set; }

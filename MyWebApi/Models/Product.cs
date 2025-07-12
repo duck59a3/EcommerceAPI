@@ -39,6 +39,7 @@ namespace MyWebApi.Models
 
 
         // Navigation properties
+        public ICollection<ProductImage> Images { get; set; } = new List<ProductImage>();
         public int CategoryId { get; set; }
         [ForeignKey("CategoryId")]
         [ValidateNever]

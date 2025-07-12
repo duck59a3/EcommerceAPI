@@ -4,10 +4,11 @@ namespace MyWebApi.DTOs.Requests
 {
     public record CreateOrderDTO(
         [Required]int userId,
-        string name,
-        string phoneNumber,
-        string address,
-        string city,
+        [Required]string name,
+        [Required] string phoneNumber,
+        [Required] string address,
+        [Required] string city,
+        string notes,
         [Required]string paymentMethod,
         List<CreateOrderDetailDTO> items ) ;
 }
