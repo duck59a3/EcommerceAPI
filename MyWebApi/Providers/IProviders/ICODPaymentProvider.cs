@@ -1,5 +1,4 @@
-﻿
-using MyWebApi.DTOs.Requests;
+﻿using MyWebApi.DTOs.Requests;
 using MyWebApi.Models;
 using MyWebApi.Responses;
 

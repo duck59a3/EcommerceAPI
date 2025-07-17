@@ -11,6 +11,7 @@ using MyWebApi.Repository;
 using MyWebApi.Repository.IRepository;
 using MyWebApi.Services;
 using MyWebApi.Services.IService;
+using Serilog;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,7 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReact",
-        policy => policy.WithOrigins("http://localhost:5173") // N?u b?n dùng Vite
+        policy => policy.WithOrigins("http://localhost:5173") // vite
                         .AllowAnyHeader()
                         .AllowAnyMethod());
 });
@@ -27,6 +28,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddControllers();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "MyWebAPI";
+});
 builder.Services.AddMemoryCache();
 builder.Services.AddJWTAuthentication(builder.Configuration);
 
@@ -43,6 +50,7 @@ builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
 builder.Services.AddScoped<IProductService, MyWebApi.Services.ProductService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IAppUser, UserService>();
 builder.Services.AddScoped<IReviewService, MyWebApi.Services.ReviewService>();
@@ -83,6 +91,13 @@ builder.Services.AddSwaggerGen(option => {
     });
 });
 
+
+
+builder.Host.UseSerilog((context, config) =>
+{
+    config.ReadFrom.Configuration(context.Configuration);
+});
+    
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -100,5 +115,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
+app.UseSerilogRequestLogging();
 app.Run();

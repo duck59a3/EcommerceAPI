@@ -19,16 +19,7 @@ namespace MyWebApi.Controllers
             _userService = userService;
             _emailService = emailService;
         }
-        [HttpGet("test-auth-header")]
-        public IActionResult TestHeader()
-        {
-            if (!Request.Headers.TryGetValue("Authorization", out var authHeader))
-            {
-                return BadRequest("❌ Không tìm thấy header Authorization");
-            }
-
-            return Ok($"✅ Header: {authHeader}");
-        }
+       
         [HttpPost("register")]
         public async Task<ActionResult<Response>> Register(AppUserDTO appUserDTO)
         {
@@ -75,11 +66,6 @@ namespace MyWebApi.Controllers
             }
             return Ok(users);
         }
-        [HttpPost("send-test-email")]
-        public async Task<IActionResult> SendTestEmail()
-        {
-            await _emailService.SendEmailAsync("duck59a3@gmail.com", "Test Email", "<h3>Đơn hàng đã được xác nhận!</h3>");
-            return Ok("Đã gửi email");
-        }
+
     }
 }
