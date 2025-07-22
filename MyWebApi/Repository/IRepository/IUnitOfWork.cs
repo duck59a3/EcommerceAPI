@@ -11,6 +11,8 @@ namespace MyWebApi.Repository.IRepository
         IPaymentRepository Payments { get; }
         IProductImageRepository ProductImages { get; }
         IReviewRepository Reviews { get; }
+        IVoucherRepository Vouchers { get; }
+        IVoucherUsageRepository VouchersUsage { get; }
         Task SaveAsync();
     }
 }

@@ -5,7 +5,7 @@
 namespace MyWebApi.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdateGUIDIDnew : Migration
+    public partial class fixIdentity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

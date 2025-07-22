@@ -24,64 +24,7 @@ namespace MyWebApi.Services
             _context = context;
             _emailService = emailService;
         }
-        public async Task<Response> CreateOrderAsync(CreateOrderDTO createOrderDto)
-        {
-            using var transaction = await _context.Database.BeginTransactionAsync() ;
-            try
-            {
-                int totalAmount = 0;
-                var orderItems = new List<OrderDetail>();
-                foreach (var item in createOrderDto.items)
-                {
-                    var product = await _context.Products.FindAsync(item.productId);
-                    if (product == null)
-                    {
-                        throw new KeyNotFoundException($"Product with ID {item.productId} not found.");
-                    }
-                    if (product.Quantity < item.count)
-                    {
-                        throw new InvalidOperationException($"Insufficient stock for product {product.Name}.");
-                    }
-                    totalAmount += product.Price * item.count;
-                    orderItems.Add(new OrderDetail
-                    {
-                        ProductId = item.productId,
-                        ProductName = item.productName,
-                        Count = item.count,
-                        Price = product.Price
-                    });
-                    product.Quantity -= item.count; // Giảm số lượng sản phẩm trong kho
-                }
-                int ShippingCost = CalculateShippingCost(totalAmount);
-                int grandTotal = totalAmount + ShippingCost;
-                var order = new Order
-                {
-                    UserId = createOrderDto.userId,
-                    OrderDate = DateTime.UtcNow,
-                    TotalAmount = totalAmount,
-                    ShippingCost = ShippingCost,
-                    GrandTotal = grandTotal,
-                    PaymentMethod = createOrderDto.paymentMethod,
-                    PaymentStatus = PaymentStatus.Pending,
-                    Notes = createOrderDto.notes,
-                    FullName = createOrderDto.name,
-                    Phone = createOrderDto.phoneNumber,
-                    Address = createOrderDto.address,
-                    City = createOrderDto.city,
-                    Items = orderItems
-                };
-                await _orderRepository.AddAsync(order);
-                await _unitOfWork.SaveAsync();
-                await transaction.CommitAsync();
-                return new Response(true, "Tạo đơn hàng thành công.");
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync();
-                LogException.LogExceptions(ex);
-                return new Response(false, $"Có lõi khi tạo đơn hàng {ex.Message}.");
-            }
-        }
+
 
         public async Task<Response> CreateOrderFromCartAsync(int userId, string paymentMethod, string notes = null!)
         {
@@ -95,62 +38,62 @@ namespace MyWebApi.Services
                 }
                 int totalAmount = 0;
                 var orderItems = new List<OrderDetail>();
-                var orderCreateDto = new CreateOrderDTO(userId,
-                    cart.AppUser.Name,
-                    cart.AppUser.PhoneNumber!,
-                    cart.AppUser.Address!,
-                    cart.AppUser.City!,
-                    notes,
-                    paymentMethod,
-                    cart.CartItems.Select(ci => new CreateOrderDetailDTO(ci.ProductId,ci.ProductName, ci.Quantity)).ToList()
+                //var orderCreateDto = new CreateOrderDTO(userId,
+                //    cart.AppUser.Name,
+                //    cart.AppUser.PhoneNumber!,
+                //    cart.AppUser.Address!,
+                //    cart.AppUser.City!,
+                //    notes,
+                //    paymentMethod,
+                //    cart.CartItems.Select(ci => new CreateOrderDetailDTO(ci.ProductId,ci.ProductName, ci.Quantity)).ToList()
 
-                    );
+                //    );
 
-                foreach (var item in orderCreateDto.items)
+                foreach (var item in cart.CartItems)
                 {
-                    var product = await _context.Products.FindAsync(item.productId);
+                    var product = await _context.Products.FindAsync(item.ProductId);
                     if (product == null)
                     {
-                        throw new KeyNotFoundException($"Product with ID {item.productId} not found.");
+                        throw new KeyNotFoundException($"Product with ID {item.ProductId} not found.");
                     }
-                    if (product.Quantity < item.count)
+                    if (product.Quantity < item.Quantity)
                     {
                         throw new InvalidOperationException($"Insufficient stock for product {product.Name}.");
                     }
-                    totalAmount += product.Price * item.count;
+                    totalAmount += product.Price * item.Quantity;
                     orderItems.Add(new OrderDetail
                     {
-                        ProductId = item.productId,
-                        ProductName = item.productName,
-                        Count = item.count,
+                        ProductId = product.Id,
+                        ProductName = product.Name,
+                        Count = item.Quantity,
                         Price = product.Price
                     });
-                    product.Quantity -= item.count; // Giảm số lượng sản phẩm trong kho
+                    product.Quantity -= item.Quantity; // Giảm số lượng sản phẩm trong kho
                 }
                 int ShippingCost = CalculateShippingCost(totalAmount);
                 int grandTotal = totalAmount + ShippingCost;
                 var order = new Order
                 {
-                    UserId = orderCreateDto.userId,
+                    UserId = userId,
                     OrderDate = DateTime.UtcNow,
                     Status = OrderStatus.Confirmed,
                     TotalAmount = totalAmount,
                     ShippingCost = ShippingCost,
                     GrandTotal = grandTotal,
-                    PaymentMethod = orderCreateDto.paymentMethod,
+                    PaymentMethod = paymentMethod,
                     PaymentStatus = PaymentStatus.Pending,
-                    Notes = orderCreateDto.notes,
-                    FullName = orderCreateDto.name,
-                    Phone = orderCreateDto.phoneNumber,
-                    Address = orderCreateDto.address,
-                    City = orderCreateDto.city,
+                    Notes = notes,
+                    FullName = cart.AppUser.Name,
+                    Phone = cart.AppUser.PhoneNumber!,
+                    Address = cart.AppUser.Address!,
+                    City = cart.AppUser.City!,
                     Items = orderItems
                 };
                 await _orderRepository.AddAsync(order);
                 await _unitOfWork.Carts.RemoveAsync(cart); 
                 await _unitOfWork.SaveAsync();
                 await transaction.CommitAsync();
-                await _emailService.SendEmailAsync("pokiwarduc@gmail.com", "Thông báo", "Đơn hàng được đặt thành công");
+                await _emailService.SendEmailAsync($"{cart.AppUser.Email}", "Thông báo", "Đơn hàng được đặt thành công");
                 return new Response(true, "Tạo đơn hàng từ giỏ hàng thành công.");
             }
             catch (Exception ex)

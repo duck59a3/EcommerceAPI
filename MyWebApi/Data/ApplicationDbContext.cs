@@ -36,5 +36,7 @@ namespace MyWebApi.Data
         public DbSet<Payment> Payments { get; set; }
         public DbSet<ProductImage> ProductImages { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<VoucherUsage> VouchersUsage { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace MyWebApi.Services.IService
 {
     public interface IOrderService : IGenericService<Order>
     {
-        Task<Response> CreateOrderAsync(CreateOrderDTO createOrderDto);
+
         Task<Response> CreateOrderFromCartAsync(int userId, string paymentMethod, string notes);
         Task<OrderDTO> GetOrderByIdAsync(int orderId);
 

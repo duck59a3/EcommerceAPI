@@ -46,25 +46,16 @@ namespace MyWebApi.Controllers
             }
             return Ok(orders);
         }
+
         [HttpPost]
-        public async Task<ActionResult<Response>> CreateOrder([FromBody] CreateOrderDTO createOrderDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-            var response = await _orderService.CreateOrderAsync(createOrderDto);
-            return Ok(response);
-        }
-        [HttpPost("{userId}")]
-        public async Task<ActionResult<Response>> CreateOrderFromCart(int userId, [FromQuery] string paymentMethod, [FromQuery] string notes = null!)
+        public async Task<ActionResult<Response>> CreateOrderFromCart(CreateOrderDTO createOrderDTO)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
             //Hoan thanh Authorize => thay thế userId bằng userId từ token
-            var response = await _orderService.CreateOrderFromCartAsync(userId, paymentMethod, notes);
+            var response = await _orderService.CreateOrderFromCartAsync(createOrderDTO.userId, createOrderDTO.paymentMethod, createOrderDTO.notes);
             return Ok(response);
         }
     }

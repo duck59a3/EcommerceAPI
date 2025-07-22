@@ -16,6 +16,8 @@ namespace MyWebApi.Repository
         public IProductImageRepository ProductImages { get; private set; }
         public IPaymentRepository Payments { get; private set; }
         public IReviewRepository Reviews { get; private set; }
+        public IVoucherRepository Vouchers { get; private set; }
+        public IVoucherUsageRepository VouchersUsage { get; private set; }
         //public ICategoryRepository Category { get; private set; }
         //public IProductRepository Product { get; private set; }
         public UnitOfWork(ApplicationDbContext db)
@@ -29,6 +31,8 @@ namespace MyWebApi.Repository
             Payments = new PaymentRepository(_db);
             ProductImages = new ProductImageRepository(_db);
             Reviews = new ReviewRepository(_db);
+            Vouchers = new VoucherRepository(_db);
+            VouchersUsage = new VoucherUsageRepository(_db);
         }
 
        
