@@ -17,12 +17,14 @@ namespace MyWebApi.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
-        public OrderService(IUnitOfWork unitOfWork, IOrderRepository orderRepository, ApplicationDbContext context, IEmailService emailService) : base(unitOfWork, orderRepository)
+        private readonly IVoucherService _voucherService;
+        public OrderService(IUnitOfWork unitOfWork, IOrderRepository orderRepository, ApplicationDbContext context, IEmailService emailService, IVoucherService voucherService) : base(unitOfWork, orderRepository)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _context = context;
             _emailService = emailService;
+            _voucherService = voucherService;
         }
 
 

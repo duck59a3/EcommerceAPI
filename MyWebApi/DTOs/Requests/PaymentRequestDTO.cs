@@ -7,6 +7,8 @@ namespace MyWebApi.DTOs.Requests
        [Required]int orderId,
        [Required,Range(1, int.MaxValue)]int amount,
        [Required]PaymentMethod paymentMethod,
-       string customerEmail);
+       string customerEmail,
+       string? ReturnUrl,
+       string? CancelUrl);
 
 }

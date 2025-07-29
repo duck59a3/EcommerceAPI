@@ -12,6 +12,7 @@ using MyWebApi.Responses;
 using MyWebApi.Services.IService;
 using Stripe;
 using Stripe.Checkout;
+using Stripe.Climate;
 using PaymentMethod = MyWebApi.Enums.PaymentMethod;
 
 namespace MyWebApi.Services
@@ -22,74 +23,89 @@ namespace MyWebApi.Services
         private readonly IPaymentRepository _paymentRepo;
         private readonly ApplicationDbContext _db;
         private readonly IEmailService _emailService;
-        public PaymentService(IUnitOfWork unitOfWork, IPaymentRepository repository, IEmailService emailService, ApplicationDbContext db)
+        private readonly IStripeProvider _stripeProvider;
+
+        public PaymentService(IUnitOfWork unitOfWork, IPaymentRepository repository, IEmailService emailService, ApplicationDbContext db, IStripeProvider stripeProvider)
         {
             _unitOfWork = unitOfWork;
             _paymentRepo = repository;
             _emailService = emailService;
             _db = db;
-
+            _stripeProvider = stripeProvider;
         }
-
-        public async Task<PaymentResponse> CompleteCODPaymentAsync(CODPaymentUpdateDTO codPaymentUpdateDTO)
+        public async Task<PaymentResponse> ProcessPaymentCallbackAsync(int paymentId, PaymentCallBack callbackRequest)
         {
-            using (var transaction =  _db.Database.BeginTransaction())
-            {
-                try
-                {
-                    var payment = await _paymentRepo.GetPaymentByOrderIdAsync(codPaymentUpdateDTO.orderId);
-                    if (payment == null) 
-                    {
-                        return new PaymentResponse
-                        {
-                            isSuccess = false,
-                            Message = "Không tìm thấy payment"
-                        };
-                    }
-                    if (payment.Order == null)
-                    {
-                        return new PaymentResponse
-                        {
-                            isSuccess = false,
-                            Message = "Không tìm thấy đơn hàng thanh toán với phương thức này"
-                        };
-                    }
-                    if (payment.Order.Status != OrderStatus.Shipping)
-                    {
-                        return new PaymentResponse
-                        {
-                            isSuccess = false,
-                            Message = $"Order cannot be marked as Delivered from {payment.Order.Status} State"
-                        };
-                    }
-                    if (payment.Method != PaymentMethod.COD)
-                    {
-                        return new PaymentResponse
-                        {
-                            isSuccess = false,
-                            Message = "Phương thức không phải tiền mặt"
-                        };
-                    }
-                    payment.Status = PaymentStatus.Paid;
-                    payment.Order.Status = OrderStatus.Delivered;
-                    await _db.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                    return new PaymentResponse
-                    {
-                        isSuccess = true,
-                        Message = "Đơn hàng đã được giao và thanh toán bằng tiền mặt"
-                    };
+            using var transaction = await _db.Database.BeginTransactionAsync();
 
-                }
-                catch (Exception ex)
+            try
+            {
+                var payment = await _db.Payments
+                    .Include(p => p.Order)
+                    .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+                if (payment == null)
                 {
-                    LogException.LogExceptions(ex);
                     return new PaymentResponse
                     {
                         isSuccess = false,
-                        Message = ex.Message
+                        Message = "Không tìm thấy thông tin thanh toán",
+                        status = PaymentStatus.Failed,
+                        Data = new { }
                     };
                 }
+
+                // Xử lý callback theo gateway
+                var result = await ProcessCallbackByGateway(payment, callbackRequest);
+
+                if (result.isSuccess)
+                {
+                    // Cập nhật payment
+                    payment.Status = PaymentStatus.Paid;
+                    payment.TransactionId = callbackRequest.TransactionId;
+
+                    // Cập nhật order status
+                    await UpdateOrderPaymentStatus(payment.OrderId, PaymentStatus.Paid);
+
+                    await _unitOfWork.SaveAsync();
+                    await transaction.CommitAsync();
+
+                    return new PaymentResponse
+                    {
+                        isSuccess = true,
+                        Message = "Thanh toán thành công",
+                        TransactionId = payment.TransactionId ?? string.Empty,
+                        status = PaymentStatus.Paid,
+                        Data = new
+                        {
+                            PaymentId = payment.Id,
+                            OrderId = payment.OrderId,
+                            Amount = payment.Amount
+                        }
+                    };
+                }
+                else
+                {
+                    payment.Status = PaymentStatus.Failed;
+
+                    await _unitOfWork.SaveAsync();
+                    await transaction.CommitAsync();
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+               
+                LogException.LogExceptions(ex);
+
+                return new PaymentResponse
+                {
+                    isSuccess = false,
+                    Message = "Lỗi khi xử lý callback thanh toán",
+                    status = PaymentStatus.Failed,
+                    Data = new { }
+                };
             }
         }
 
@@ -121,11 +137,128 @@ namespace MyWebApi.Services
 
         public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequestDTO request)
         {
-            return new PaymentResponse
+            using var transaction = await _db.Database.BeginTransactionAsync();
+            try
             {
+                var order = await _db.Orders
+                    .Include(o => o.Items)
+                    .FirstOrDefaultAsync(o => o.Id == request.orderId);
+                if (order == null)
+                {
+                    return new PaymentResponse
+                    {
+                        isSuccess = false,
+                        Message = "Không tìm thấy đơn hàng"
+                    };
+                }
+                if (order.PaymentStatus == PaymentStatus.Paid)
+                {
+                    return new PaymentResponse
+                    {
+                        isSuccess = false,
+                        Message = "Đơn hàng đã được thanh toán"
+                    };
+                }
+                var payment = new Payment
+                {
+                    OrderId = order.Id,
+                    Amount = order.TotalAmount, 
+                    Currency = "VND",
+                    Status = PaymentStatus.Pending,
+                    Method = request.paymentMethod,
+                    TransactionId = string.Empty,
+                    CreatedAt = DateTime.Now,
+                    CustomerEmail = request.customerEmail,
+                };
+                await _unitOfWork.Payments.AddAsync(payment);
+                await _unitOfWork.SaveAsync();
+                var result = await ProcessPaymentByMethod(payment, request);
+                if (result.isSuccess)
+                {
+                    payment.Status = result.status;
+                    payment.TransactionId = result.TransactionId;
 
-            };
+                    // Nếu là COD thì cập nhật trạng thái ngay
+                    if (request.paymentMethod == PaymentMethod.COD)
+                    {
+                        payment.Order.Status = OrderStatus.Confirmed;
+                        payment.Status = PaymentStatus.Paid;
+                    }
+
+                    await _unitOfWork.SaveAsync();
+                    await transaction.CommitAsync();
+
+                    return new PaymentResponse
+                    {
+                        isSuccess = true,
+                        Message = result.Message,
+                        TransactionId = result.TransactionId,
+                        PaymentUrl = result.PaymentUrl,
+                        status = result.status,
+                        Data = new
+                        {
+                            PaymentId = payment.Id,
+                            OrderId = payment.OrderId,
+                            Amount = payment.Amount,
+                            Currency = payment.Currency,
+                            CreatedAt = payment.CreatedAt,
+                            CustomerEmail = payment.CustomerEmail
+                        }
+                    };
+                }
+                else
+                {
+                    payment.Status = PaymentStatus.Failed;
+
+                    await _unitOfWork.SaveAsync();
+                    await transaction.CommitAsync();
+
+                    return result;
+                }
+            }
+            catch (Exception e) {
+                await transaction.RollbackAsync();
+                LogException.LogExceptions(e);
+                return new PaymentResponse
+                {
+                    isSuccess = false,
+                    Message = "Lỗi khi tạo thanh toán",
+                    status = PaymentStatus.Failed,
+                    Data = new { }
+                };
+
+
+            } 
             
+        }
+
+        private async Task<PaymentResponse> ProcessPaymentByMethod(Payment payment, PaymentRequestDTO request)
+        {
+            switch (payment.Method)
+            {
+                case PaymentMethod.COD:
+                    return new PaymentResponse
+                    {
+                        isSuccess = true,
+                        Message = "Đặt hàng thành công - Thanh toán khi nhận hàng",
+                        TransactionId = $"COD_{payment.Id}_{DateTime.UtcNow.Ticks}",
+                        status = PaymentStatus.Pending,
+                        PaymentUrl = string.Empty,
+                        Data = new { PaymentMethod = "COD" }
+                    };
+
+                case PaymentMethod.Stripe:
+                    return await _stripeProvider.CreatePaymentIntentAsync(payment, request.ReturnUrl, request.CancelUrl);
+
+                default:
+                    return new PaymentResponse
+                    {
+                        isSuccess = false,
+                        Message = "Phương thức thanh toán không được hỗ trợ",
+                        status = PaymentStatus.Failed,
+                        Data = new { }
+                    };
+            }
         }
 
         public async Task<PaymentResponse> UpdatePaymentStatus(UpdatePaymentStatusDTO request)
@@ -134,7 +267,7 @@ namespace MyWebApi.Services
             {
 
 
-                var payment = await _paymentRepo.GetPaymentByOrderIdAsync(request.paymentId);
+                var payment = await _paymentRepo.GetPaymentByIdAsync(request.paymentId);
                 if (payment == null)
                 {
                     return new PaymentResponse
@@ -168,9 +301,59 @@ namespace MyWebApi.Services
                 };
              }
             
-        }  
+        }
 
-        
+        #region PRIVATE
+        private async Task<PaymentResponse> ProcessCallbackByGateway(Payment payment, PaymentCallBack callbackRequest)
+        {
+            switch (payment.Method)
+            {
+                case PaymentMethod.Stripe:
+                    return await _stripeProvider.HandleCallbackAsync(payment, callbackRequest.GatewayResponse);
+
+                case PaymentMethod.COD:
+                    // COD payment
+                    return new PaymentResponse
+                    {
+                        isSuccess = true,
+                        Message = "Thanh toán COD thành công",
+                        status = PaymentStatus.Paid,
+                        Data = new { }
+                    };
+
+                default:
+                    return new PaymentResponse
+                    {
+                        isSuccess = false,
+                        Message = "Phương thức thanh toán không được hỗ trợ",
+                        status = PaymentStatus.Failed,
+                        Data = new { }
+                    };
+            }
+        }
+        private async Task UpdateOrderPaymentStatus(int orderId, PaymentStatus paymentStatus)
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId);
+            if (order != null)
+            {
+                order.PaymentStatus = paymentStatus;
+
+                // Cập nhật order status tương ứng
+                if (paymentStatus == PaymentStatus.Paid)
+                {
+                    order.Status = OrderStatus.Confirmed;
+                }
+
+                order.UpdatedAt = DateTime.UtcNow;
+                await _unitOfWork.SaveAsync();
+
+                
+                
+            }
+        }
+        #endregion
+
+
 
 
 
@@ -231,3 +414,4 @@ namespace MyWebApi.Services
         //}
     }
 }
+

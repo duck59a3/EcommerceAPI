@@ -17,20 +17,20 @@ namespace MyWebApi.Controllers
         {
             _paymentService = paymentService;
         }
-        //[HttpPost("process")]
-        //public async Task<ActionResult<PaymentResponse>> ProcessPayment([FromBody] PaymentRequestDTO request)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        return BadRequest(ModelState);
-        //    }
-        //    if (request == null)
-        //    {
-        //        return BadRequest("Invalid payment request.");
-        //    }
-        //    var response = await _paymentService.ProcessPaymentAsync(request);
-        //    return Ok(response);
-        //}
+        [HttpPost("process")]
+        public async Task<ActionResult<PaymentResponse>> ProcessPayment([FromBody] PaymentRequestDTO request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            if (request == null)
+            {
+                return BadRequest("Invalid payment request.");
+            }
+            var response = await _paymentService.ProcessPaymentAsync(request);
+            return Ok(response);
+        }
         //[HttpGet("verify/{transactionId}")]
         //public async Task<ActionResult<PaymentResponse>> VerifyPayment(string transactionId, [FromQuery] PaymentMethod method)
         //{

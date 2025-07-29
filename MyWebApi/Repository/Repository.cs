@@ -44,5 +44,28 @@ namespace MyWebApi.Repository
         {
             return await _dbSet.FindAsync(id);
         }
+        //public T Get(Expression<Func<T, bool>> filter, bool tracked = false, string? includeProperties = null)
+        //{
+        //    IQueryable<T> query;
+        //    if (tracked)
+        //    {
+        //        query = dbSet;
+
+        //    }
+        //    else
+        //    {
+        //        query = dbSet.AsNoTracking();
+
+        //    }
+        //    query = query.Where(filter);
+        //    if (!string.IsNullOrEmpty(includeProperties))
+        //    {
+        //        foreach (var includeProperty in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+        //        {
+        //            query = query.Include(includeProperty);
+        //        }
+        //    }
+        //    return query.FirstOrDefault();
+        //}
     }
 }

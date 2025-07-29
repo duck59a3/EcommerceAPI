@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
@@ -36,6 +37,13 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 builder.Services.AddMemoryCache();
 builder.Services.AddJWTAuthentication(builder.Configuration);
+builder.Services.Configure<CloudinaryOptions>(
+    builder.Configuration.GetSection("Cloudinary"));
+// Configure file upload limits
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50MB
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -45,6 +53,7 @@ builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IReviewRepository,  ReviewRepository>();
+builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
 builder.Services.AddScoped<IProductService, MyWebApi.Services.ProductService>();
@@ -52,6 +61,7 @@ builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<ICacheService, CacheService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IAppUser, UserService>();
 builder.Services.AddScoped<IReviewService, MyWebApi.Services.ReviewService>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
@@ -62,6 +72,7 @@ builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 builder.Services.AddScoped<ICODPaymentProvider, CODPaymentProvider>();
 builder.Services.AddScoped<IStripeProvider, StripeProvider>();
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option => {
@@ -75,6 +86,7 @@ builder.Services.AddSwaggerGen(option => {
         BearerFormat = "JWT",
         Scheme = "Bearer"
     });
+    option.OperationFilter<FileUploadOperationFilter>();
     option.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -109,6 +121,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowReact");
 app.UseStaticFiles();
 app.UseHttpsRedirection();
+app.UseFileUploadMiddleware(50 * 1024 * 1024); // 50MB limit
 StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:SecretKey").Get<string>();
 app.UseMiddleware<GlobalException>();
 app.UseAuthentication();

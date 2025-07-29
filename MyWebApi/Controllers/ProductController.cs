@@ -95,7 +95,17 @@ namespace MyWebApi.Controllers
         [HttpPost("upload-image")]
         public async Task<ActionResult<Response>> UploadImage([FromForm] UploadProductImageDTO model)
         {
-            var response = await _productService.UploadProductImage(model.productId, model.image);
+            if (model.image == null || model.image.Length == 0)
+                return BadRequest("Không có file nào được tải lên");
+            var response = await _productService.UploadProductImage(model.productId ,model.image);
+            return response.Flag is true ? Ok(response) : BadRequest(response);
+        }
+        [HttpPost("upload-video")]
+        public async Task<ActionResult<Response>> UploadVideo([FromForm] UploadProductImageDTO model)
+        {
+            if (model.image == null || model.image.Length == 0)
+                return BadRequest("Không có file nào được tải lên");
+            var response = await _productService.UploadProductVideo(model.productId, model.image);
             return response.Flag is true ? Ok(response) : BadRequest(response);
         }
     }

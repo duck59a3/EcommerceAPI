@@ -7,15 +7,16 @@ using MyWebApi.Repository.IRepository;
 
 namespace MyWebApi.Repository
 {
-    public class PaymentRepository : IPaymentRepository
+    public class PaymentRepository : Repository<Payment>,  IPaymentRepository
     {
         //private readonly IMemoryCache _cache;
         //private readonly string _cachePrefix = "payment_";
-        private readonly ApplicationDbContext _context;
-        public PaymentRepository(ApplicationDbContext context)
+        private readonly ApplicationDbContext _db;
+
+        public PaymentRepository(ApplicationDbContext db) : base(db) 
         {
             //_cache = cache;
-            _context = context;
+            _db = db;
         }
         public async Task<Payment> CreatePaymentAsync(Payment payment)
         {
@@ -34,13 +35,13 @@ namespace MyWebApi.Repository
 
         public async Task<Payment> GetPaymentByIdAsync(int paymentId)
         {
-            return await _context.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.Id == paymentId);
+            return await _db.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.Id == paymentId);
         }
 
         public async Task<Payment> GetPaymentByOrderIdAsync(int orderId)
         {
             
-            return await _context.Payments.Include(p => p.Order).FirstOrDefaultAsync(p => p.OrderId == orderId);
+            return await _db.Payments.Include(p => p.Order).FirstOrDefaultAsync(p => p.OrderId == orderId);
         }
 
         public async Task<List<Payment>> GetPaymentsByStatusAsync(PaymentStatus status)

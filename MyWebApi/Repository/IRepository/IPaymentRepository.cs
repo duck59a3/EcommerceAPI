@@ -3,7 +3,7 @@ using MyWebApi.Models;
 
 namespace MyWebApi.Repository.IRepository
 {
-    public interface IPaymentRepository 
+    public interface IPaymentRepository : IRepository<Payment>
     {
         Task<Payment> CreatePaymentAsync(Payment payment);
         Task<Payment> UpdatePaymentAsync(Payment payment);

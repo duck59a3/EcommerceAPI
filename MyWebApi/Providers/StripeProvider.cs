@@ -1,101 +1,236 @@
 ﻿using MyWebApi.DTOs.Requests;
 using MyWebApi.Enums;
+using MyWebApi.Logs;
 using MyWebApi.Models;
 using MyWebApi.Providers.IProviders;
 using MyWebApi.Responses;
 using Stripe;
+using Stripe.Checkout;
+using Stripe.V2;
 
 namespace MyWebApi.Providers
 {
     public class StripeProvider : IStripeProvider
     {
         private readonly IConfiguration _configuration;
-        private readonly string _secretKey;
-
-        public StripeProvider(IConfiguration configuration)
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public StripeProvider(IConfiguration configuration, IHttpContextAccessor httpContextAccessor)
         {
             _configuration = configuration;
-            _secretKey = configuration["Stripe:SecretKey"];
-            StripeConfiguration.ApiKey = _secretKey;
+            StripeConfiguration.ApiKey = _configuration["Stripe:SecretKey"];
+            _httpContextAccessor = httpContextAccessor;
         }
-
-        public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequestDTO request, Payment payment)
+        public async Task<PaymentResponse> CreatePaymentIntentAsync(Payment payment, string? returnUrl, string? cancelUrl)
         {
             try
             {
-                var options = new PaymentIntentCreateOptions
-                {
-                    Amount = (long)(request.amount * 100), // Convert to cents
+                var domain = "https://localhost:7186/";
+                var options = new SessionCreateOptions {
+                    PaymentMethodTypes = new List<string> { "card" },
+                    LineItems = new List<SessionLineItemOptions>
+                    {
+                        new SessionLineItemOptions
+                        {
+                            PriceData = new SessionLineItemPriceDataOptions
+                            {
+                                UnitAmount = (long)payment.Amount,
+                                Currency = payment.Currency.ToLower(),
+                                ProductData = new SessionLineItemPriceDataProductDataOptions
+                                {
+                                    
+                                    Name = $"Order #{payment.OrderId}",
+                                    Description = $"Payment for order {payment.OrderId}"
+                                
+                                }
+                            },
+                            Quantity = 1
+                        }
+                    },
+                    Mode = "payment",
+                    
+                    SuccessUrl = returnUrl ?? domain + $"payment/success?payment_id={payment.Id}",
+                    CancelUrl = cancelUrl ?? domain + $"payment/cancel?payment_id={payment.Id}",
+                    ClientReferenceId = payment.Id.ToString(),
                     Metadata = new Dictionary<string, string>
                     {
-                        {"order_id", request.orderId.ToString()},
-                        {"payment_id", payment.Id.ToString()}
+                        ["payment_id"] = payment.Id.ToString(),
+                        ["order_id"] = payment.OrderId.ToString(),
+                        ["customer_email"] = payment.CustomerEmail
                     }
+                    
+
+
                 };
-
-                if (!string.IsNullOrEmpty(request.customerEmail))
-                {
-                    options.ReceiptEmail = request.customerEmail;
-                }
-
-                var service = new PaymentIntentService();
-                var paymentIntent = await service.CreateAsync(options);
-
+                var service = new SessionService();
+                var session = await service.CreateAsync(options);
                 return new PaymentResponse
                 {
                     isSuccess = true,
-                    Message = "Stripe payment intent created successfully",
-                    TransactionId = paymentIntent.Id,
+                    Message = "Stripe payment session created successfully",
+                    TransactionId = session.Id,
+                    PaymentUrl = session.Url,
                     status = PaymentStatus.Pending,
                     Data = new
                     {
-                        client_secret = paymentIntent.ClientSecret,
-                        payment_intent_id = paymentIntent.Id
+                        SessionId = session.Id,
+                        ExpiresAt = session.ExpiresAt
                     }
                 };
             }
-            catch (StripeException ex)
-            {
+            catch (StripeException ex) {
+                LogException.LogExceptions(ex);
                 return new PaymentResponse
                 {
                     isSuccess = false,
-                    Message = $"Stripe payment failed: {ex.Message}",
-                    status = PaymentStatus.Failed
+                    Message = $"Stripe error: {ex.Message}",
+                    status = PaymentStatus.Failed,
+                    Data = new { StripeError = ex.StripeError }
+                };
+            }
+            catch (Exception ex)
+            {
+                LogException.LogExceptions(ex);
+
+                return new PaymentResponse
+                {
+                    isSuccess = false,
+                    Message = "Error creating payment session",
+                    status = PaymentStatus.Failed,
+                    Data = new { }
                 };
             }
         }
 
-        public async Task<PaymentResponse> VerifyPaymentAsync(string transactionId)
+        public async Task<PaymentResponse> HandleCallbackAsync(Payment payment, string webhookPayload)
         {
             try
             {
-                var service = new PaymentIntentService();
-                var paymentIntent = await service.GetAsync(transactionId);
-
-                var status = paymentIntent.Status switch
+                var request = _httpContextAccessor.HttpContext?.Request;
+                if (request == null)
                 {
-                    "succeeded" => PaymentStatus.Paid,
-                    "processing" => PaymentStatus.Pending,
-                    "requires_payment_method" => PaymentStatus.Failed,
-                    "canceled" => PaymentStatus.Failed,
-                    _ => PaymentStatus.Pending
-                };
+                    return new PaymentResponse
+                    {
+                        isSuccess = false,
+                        Message = "Invalid request context",
+                        status = PaymentStatus.Failed,
+                        Data = new { }
+                    };
+                }
+                var stripeSignature = request.Headers["Stripe-Signature"].FirstOrDefault();
+                if (string.IsNullOrEmpty(stripeSignature))
+                {
+                    return new PaymentResponse
+                    {
+                        isSuccess = false,
+                        Message = "Không có Stripe signature",
+                        status = PaymentStatus.Failed,
+                        Data = new { }
+                    };
+                }
+                var stripeEvent = EventUtility.ConstructEvent(
+                    webhookPayload,
+                    stripeSignature,
+                    _configuration["Stripe:WebhookSecret"]
+                );
+                switch (stripeEvent.Type)
+                {
+                    case "checkout.session.completed": 
+                        var session = stripeEvent.Data.Object as Session;
 
+                        if (session?.ClientReferenceId == payment.Id.ToString())
+                        {
+                            return new PaymentResponse
+                            {
+                                isSuccess = true,
+                                Message = "Payment completed successfully",
+                                TransactionId = session.Id,
+                                status = PaymentStatus.Paid,
+                                Data = new
+                                {
+                                    StripeSessionId = session.Id,
+                                    AmountTotal = session.AmountTotal,
+                                    PaymentStatus = session.PaymentStatus
+                                }
+                            };
+                        }
+                        break;
+
+                    case "payment_intent.succeeded":
+                        var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+
+                        if (paymentIntent?.Metadata.ContainsKey("payment_id") == true &&
+                            paymentIntent.Metadata["payment_id"] == payment.Id.ToString())
+                        {
+                            return new PaymentResponse
+                            {
+                                isSuccess = true,
+                                Message = "Payment intent succeeded",
+                                TransactionId = paymentIntent.Id,
+                                status = PaymentStatus.Paid,
+                                Data = new
+                                {
+                                    PaymentIntentId = paymentIntent.Id,
+                                    Amount = paymentIntent.Amount
+                                }
+                            };
+                        }
+                        break;
+
+                    case "payment_intent.payment_failed":
+                        var failedPaymentIntent = stripeEvent.Data.Object as PaymentIntent;
+
+                        if (failedPaymentIntent?.Metadata.ContainsKey("payment_id") == true &&
+                            failedPaymentIntent.Metadata["payment_id"] == payment.Id.ToString())
+                        {
+                            return new PaymentResponse
+                            {
+                                isSuccess = false,
+                                Message = "Payment failed",
+                                TransactionId = failedPaymentIntent.Id,
+                                status = PaymentStatus.Failed,
+                                Data = new
+                                {
+                                    PaymentIntentId = failedPaymentIntent.Id,
+                                    LastPaymentError = failedPaymentIntent.LastPaymentError?.Message
+                                }
+                            };
+                        }
+                        break;
+
+                    default:
+                        
+                        break;
+                }
                 return new PaymentResponse
                 {
-                    isSuccess = status == PaymentStatus.Paid,
-                    Message = $"Payment status: {paymentIntent.Status}",
-                    TransactionId = transactionId,
-                    status = status
+                    isSuccess = false,
+                    Message = "Invalid webhook event",
+                    status = PaymentStatus.Failed,
+                    Data = new { }
                 };
             }
             catch (StripeException ex)
             {
+               LogException.LogExceptions(ex);
+
                 return new PaymentResponse
                 {
                     isSuccess = false,
-                    Message = $"Stripe verification failed: {ex.Message}",
-                    status = PaymentStatus.Failed
+                    Message = $"Stripe webhook error: {ex.Message}",
+                    status = PaymentStatus.Failed,
+                    Data = new { StripeError = ex.StripeError }
+                };
+            }
+            catch (Exception ex)
+            {
+                LogException.LogExceptions(ex);
+
+                return new PaymentResponse
+                {
+                    isSuccess = false,
+                    Message = "Error processing webhook",
+                    status = PaymentStatus.Failed,
+                    Data = new { }
                 };
             }
         }

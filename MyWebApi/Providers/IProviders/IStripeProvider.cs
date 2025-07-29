@@ -8,7 +8,7 @@ namespace MyWebApi.Providers.IProviders
 {
     public interface IStripeProvider
     {
-        Task<PaymentResponse> ProcessPaymentAsync(PaymentRequestDTO request, Payment payment);
-        Task<PaymentResponse> VerifyPaymentAsync(string transactionId);
+        Task<PaymentResponse> CreatePaymentIntentAsync(Payment payment, string? returnUrl, string? cancelUrl);
+        Task<PaymentResponse> HandleCallbackAsync(Payment payment, string webhookPayload);
     }
 }
