@@ -52,27 +52,17 @@ builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
 builder.Services.AddScoped<ICartRepository, CartRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IReviewRepository,  ReviewRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-builder.Services.AddScoped(typeof(IGenericService<>), typeof(GenericService<>));
-builder.Services.AddScoped<IProductService, MyWebApi.Services.ProductService>();
-builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<ICartService, CartService>();
-builder.Services.AddScoped<ICacheService, CacheService>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<IVoucherService, VoucherService>();
-builder.Services.AddScoped<IAppUser, UserService>();
-builder.Services.AddScoped<IReviewService, MyWebApi.Services.ReviewService>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
-builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 
 builder.Services.AddScoped<ICODPaymentProvider, CODPaymentProvider>();
 builder.Services.AddScoped<IStripeProvider, StripeProvider>();
-builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+builder.Services.AddMyServices();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(option => {

@@ -67,5 +67,6 @@ namespace MyWebApi.Controllers
             var response = await _reviewService.DeleteReviewAsync(reviewid, userid);
             return response.Flag is true ? Ok(response) : BadRequest(response);
         }
+        
     }
 }

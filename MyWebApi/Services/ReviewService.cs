@@ -17,11 +17,13 @@ namespace MyWebApi.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IReviewRepository _reviewRepo;
         private readonly ApplicationDbContext _db;
-        public ReviewService(IUnitOfWork unitOfWork, IReviewRepository repository,ApplicationDbContext db) : base(unitOfWork,repository)
+        private readonly ICloudinaryService _cloudinaryService;
+        public ReviewService(IUnitOfWork unitOfWork, IReviewRepository repository,ApplicationDbContext db, ICloudinaryService cloudinaryService) : base(unitOfWork, repository)
         {
             _unitOfWork = unitOfWork;
             _reviewRepo = repository;
             _db = db;
+            _cloudinaryService = cloudinaryService;
         }
         public async Task<bool> CanUserReviewProductAsync(int userId, int productId)
         {
@@ -161,6 +163,19 @@ namespace MyWebApi.Services
             {
                     LogException.LogExceptions(ex);
                     return new Response(false, "Cập nhật đánh giá thất bại");
+            }
+        }
+
+        public async Task<Response> UploadReviewImage(int reviewId, IFormFile file)
+        {
+            try
+            {
+                var result = await _cloudinaryService.UploadImageAsync(file, $"reviews/{reviewId}");
+                return new Response(true, "Tải hình ảnh đánh giá lên thành công");
+            }
+            catch (Exception ex) {
+                LogException.LogExceptions(ex);
+                return new Response(false, "Có lỗi khi tải lên hình ảnh");
             }
         }
     }

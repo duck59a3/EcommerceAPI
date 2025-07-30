@@ -10,6 +10,8 @@ namespace MyWebApi.Repository
     {
         private readonly ApplicationDbContext _db;
         private readonly Dictionary<Type, object> _repositories = new();
+        public IProductRepository Products { get; set; }
+        public ICategoryRepository Categories { get; set; }
         public IUserRepository Users { get; private set; }
         public ICartRepository Carts { get; private set; }
         public IOrderRepository Orders { get; private set; }
@@ -18,13 +20,12 @@ namespace MyWebApi.Repository
         public IReviewRepository Reviews { get; private set; }
         public IVoucherRepository Vouchers { get; private set; }
         public IVoucherUsageRepository VouchersUsage { get; private set; }
-        //public ICategoryRepository Category { get; private set; }
-        //public IProductRepository Product { get; private set; }
+
         public UnitOfWork(ApplicationDbContext db)
         {
             _db = db;
-            //Category = new CategoryRepository(_db);
-            //Product = new ProductRepository(_db);
+            Categories = new CategoryRepository(_db);
+            Products = new ProductRepository(_db);
             Users = new UserRepository(_db);
             Orders = new OrderRepository(_db);
             Carts = new CartRepository(_db);

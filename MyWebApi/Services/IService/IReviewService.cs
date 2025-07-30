@@ -15,5 +15,6 @@ namespace MyWebApi.Services.IService
         Task<IEnumerable<ReviewDTO>> GetUserReviewsAsync(int userId, ReviewQuery query);
         //Task<ProductReviewSummary> GetProductReviewSummaryAsync(int productId);
         Task<bool> CanUserReviewProductAsync(int userId, int productId);
+        Task<Response> UploadReviewImage(int reviewId, IFormFile file);
     }
 }

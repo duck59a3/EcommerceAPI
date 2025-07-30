@@ -152,7 +152,9 @@ namespace MyWebApi.Providers
                                     PaymentStatus = session.PaymentStatus
                                 }
                             };
+                            
                         }
+                        
                         break;
 
                     case "payment_intent.succeeded":

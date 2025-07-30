@@ -20,6 +20,7 @@ namespace MyWebApi.Services
         {
             try
             {   
+                
                 await _unitOfWork.Repository<T>().AddAsync(entity);
                 await _unitOfWork.SaveAsync();
                 return new Response(true, "Thêm thành công");

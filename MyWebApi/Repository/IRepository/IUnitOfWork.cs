@@ -5,6 +5,8 @@ namespace MyWebApi.Repository.IRepository
     public interface IUnitOfWork
     {
         IRepository<T> Repository<T>() where T : class;
+        IProductRepository Products { get; }
+        ICategoryRepository Categories { get; }
         IUserRepository Users { get; }
         ICartRepository Carts { get; }
         IOrderRepository Orders { get; }

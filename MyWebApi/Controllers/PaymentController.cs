@@ -37,35 +37,21 @@ namespace MyWebApi.Controllers
         //    var response = await _paymentService.VerifyPaymentAsync(transactionId, method);
         //    return Ok(response);
         //}
-        //[HttpGet("{transactionId}")]
-        //public async Task<ActionResult<Payment>> GetPayment(string transactionId)
-        //{
-        //    var payment = await _paymentService.GetPaymentAsync(transactionId);
-        //    if (payment == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return Ok(payment);
-        //}
-        //[HttpPost("stripe/webhook")]
-        //public async Task<IActionResult> StripeWebhook()
-        //{
+        [HttpPost("call-back")]
+        public async Task<ActionResult<PaymentResponse>> PaymentCallback([FromQuery] int paymentId, [FromBody] PaymentCallBack req)
+        {
+            if (paymentId <= 0 || req == null)
+                return BadRequest("Thiếu thông tin callback");
 
-        //    var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+            var result = await _paymentService.ProcessPaymentCallbackAsync(paymentId, req);
 
-        //    // Process Stripe webhook
-        //    var stripeEvent = Stripe.EventUtility.ConstructEvent(json,
-        //        Request.Headers["Stripe-Signature"],
-        //        "whsec_kj6r6QpjYBajPecZuVn8l9GrCDFByUMz");
+            if (!result.isSuccess)
+                return BadRequest(result);
 
-        //    if (stripeEvent.Type == "payment_intent.succeeded")
-        //    {
-        //        var paymentIntent = stripeEvent.Data.Object as Stripe.PaymentIntent;
-        //        await _paymentService.VerifyPaymentAsync(paymentIntent.Id, PaymentMethod.Stripe);
-        //    }
+            return Ok(result);
+        }
 
-        //    return Ok();
-        //}
+
 
     }
 }
