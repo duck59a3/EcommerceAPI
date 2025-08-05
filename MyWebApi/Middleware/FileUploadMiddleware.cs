@@ -17,8 +17,8 @@
             {
                 if (context.Request.ContentLength > _maxFileSize)
                 {
-                    context.Response.StatusCode = 413; // Payload Too Large
-                    await context.Response.WriteAsync("File size exceeds the maximum allowed limit.");
+                    context.Response.StatusCode = 413; // Payload quá lớnn
+                    await context.Response.WriteAsync("Kích cỡ file vượt quá mức cho phép.");
                     return;
                 }
             }

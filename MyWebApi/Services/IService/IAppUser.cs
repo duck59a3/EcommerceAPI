@@ -11,6 +11,8 @@ namespace MyWebApi.Services.IService
         Task<Response> Login(LoginDTO loginDTO);
         Task<GetUserDTO> GetUserById(int id);
         Task<IEnumerable<GetUserDTO>> GetAllUsers();
+        Task<Response> ChangePassword(ChangePasswordDTO changePasswordDTO);
+        Task<Response> ResetPassword(ResetPasswordDTO resetPasswordDTO);
 
     }
 }

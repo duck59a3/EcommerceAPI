@@ -25,8 +25,9 @@ namespace MyWebApi.Repository
 
         public Task RemoveAsync(T entity)
         {
-            _dbSet.Remove(entity);
+             _dbSet.Remove(entity);
             return Task.CompletedTask;
+
 
         }
 

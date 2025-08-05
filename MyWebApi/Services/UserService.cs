@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MyWebApi.DTOs;
 using MyWebApi.DTOs.Requests;
@@ -12,21 +13,26 @@ using MyWebApi.Responses;
 using MyWebApi.Services.IService;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace MyWebApi.Services
 {
     // Fix for CS1722: Base class 'GenericService<AppUser>' must come before any interfaces
-    public class UserService :  IAppUser
+    public class UserService : IAppUser
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
         private readonly IUserRepository _repository;
-        public UserService(IUnitOfWork unitOfWork, IUserRepository repository, IConfiguration configuration)
+        private readonly IEmailService _emailService;
+        private readonly ITokenService _tokenService;
+        public UserService(IUnitOfWork unitOfWork, IUserRepository repository, IConfiguration configuration, IEmailService emailService, ITokenService tokenService)
         {
             _unitOfWork = unitOfWork;
             _repository = repository;
             _configuration = configuration;
+            _emailService = emailService;
+            _tokenService = tokenService;
         }
 
         public async Task<IEnumerable<GetUserDTO>> GetAllUsers()
@@ -80,38 +86,14 @@ namespace MyWebApi.Services
             {
                 return new Response(false, "Mật khẩu không đúng");
             }
-            string token = GenerateToken(user);
+            var tokenResult = await _tokenService.GenerateToken(user);
+            Console.WriteLine(tokenResult.AccessToken);
+            Console.WriteLine(tokenResult.RefreshToken);
+
             return new Response(true, "Đăng nhập thành công");
         }
 
-        private string GenerateToken(AppUser user)
-        {
-            var key = Encoding.UTF8.GetBytes(_configuration.GetSection("Authentication:Key").Value!);
-            var securityKey = new SymmetricSecurityKey(key);
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            var claims = new List<Claim>
-            {
-                new (ClaimTypes.Name, user.Name),
-                new (ClaimTypes.Email, user.Email!),
-                new(ClaimTypes.Role, user.Role!),
-
-            };
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Authentication:Issuer"],
-                audience: _configuration["Authentication:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: credentials
-            );
-            Console.WriteLine("Generating token for user: " + user.Email);
-            Console.WriteLine("User Role: " + user.Role);
-            Console.WriteLine("JWT Key: " + _configuration["Authentication:Key"]);
-            Console.WriteLine("Token sinh ra: " + token);
-             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
-            Console.WriteLine("JWT Token: " + jwt); // 👈 phải in ra được token JWT
-            return jwt;
-
-        }
+        
 
         public async Task<Response> Register(AppUserDTO appUserDTO)
         {
@@ -137,5 +119,77 @@ namespace MyWebApi.Services
                 ? new Response(true, "Đăng ký thành công")
                 : new Response(false, "Đăng ký thất bại");
         }
+
+        public async Task<Response> ChangePassword(ChangePasswordDTO changePasswordDTO)
+        {
+            try
+            {
+                var user = await _unitOfWork.Users.GetUserByIdAsync(changePasswordDTO.userId);
+                if (user == null)
+                {
+                    return new Response(false, "Người dùng không tồn tại");
+                }
+                // isActive check : làm thêm sau
+                bool isPasswordValid = BCrypt.Net.BCrypt.Verify(changePasswordDTO.CurrentPassword, user.Password);
+                if (!isPasswordValid)
+                {
+                    return new Response(false, "Mật khẩu hiện tại không đúng");
+                }
+                if (changePasswordDTO.NewPassword != changePasswordDTO.ConfirmNewPassword)
+                {
+                    return new Response(false, "Mật khẩu mới và xác nhận mật khẩu không khớp");
+                }
+                user.Password = BCrypt.Net.BCrypt.HashPassword(changePasswordDTO.NewPassword);
+                await _unitOfWork.Users.UpdateUserAsync(user);
+                await _unitOfWork.SaveAsync();
+                return new Response(true, "Mật khẩu đã được thay đổi thành công");
+            }
+            catch (Exception ex)
+            {
+                LogException.LogExceptions(ex);
+                return new Response(false, $"Lỗi khi thay đổi mật khẩu{ex.Message}");
+            }
+        }
+
+        public async Task<Response> ResetPassword(ResetPasswordDTO resetPasswordDTO)
+        {
+            try
+            {
+                var user = await _unitOfWork.Users.GetUserByEmailAsync(resetPasswordDTO.Email);
+                if (user == null)
+                {
+                    return new Response(false, "Email không tồn tại");
+                }
+                var newPassword = GeneratePassword();
+                string subject = "Mật khẩu mới của bạn";
+                string body = $"Mật khẩu mới của bạn là: {newPassword}\nVui lòng đăng nhập và đổi mật khẩu.";
+                await _emailService.SendEmailAsync(user.Email!, subject, body);
+                user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                //thêm logic token sau
+                await _unitOfWork.Users.UpdateUserAsync(user);
+                await _unitOfWork.SaveAsync();
+
+                return new Response(true, "Mật khẩu mới đã được gửi qua email");
+            }
+            catch (Exception ex)
+            {
+                LogException.LogExceptions(ex);
+                return new Response(false, $"Lỗi khi reset mật khẩu{ex.Message}");
+            }
+        }
+        private static string GeneratePassword(int length = 8)
+        {
+
+            const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+            var random = new Random();
+            var result = new char[length];
+            for (int i = 0; i < length; i++)
+            {
+                result[i] = validChars[random.Next(validChars.Length)];
+            }
+            return new string(result);
+
+        }
+       
     }
 }

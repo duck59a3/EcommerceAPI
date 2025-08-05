@@ -14,12 +14,14 @@ namespace MyWebApi.Controllers
     {
         private readonly IAppUser _userService;
         private readonly IEmailService _emailService;
-        public UserController(IAppUser userService, IEmailService emailService)
+        private readonly ITokenService _tokenService;
+        public UserController(IAppUser userService, IEmailService emailService, ITokenService tokenService)
         {
             _userService = userService;
             _emailService = emailService;
+            _tokenService = tokenService;
         }
-       
+
         [HttpPost("register")]
         public async Task<ActionResult<Response>> Register(AppUserDTO appUserDTO)
         {
@@ -66,6 +68,38 @@ namespace MyWebApi.Controllers
             }
             return Ok(users);
         }
+        [HttpPut("change-password")]
+        public async Task<ActionResult<Response>> ChangePassword(ChangePasswordDTO changePasswordDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var response = await _userService.ChangePassword(changePasswordDTO);
 
+            return response.Flag ? Ok(response) : BadRequest(response);
+        }
+        [HttpPost("renew-accesstoken")]
+        public async Task<ActionResult<Response>> RenewToken(TokenResponseDTO tokenResponseDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var response = await _tokenService.RenewToken(tokenResponseDTO);
+
+            return response.Flag ? Ok(response) : BadRequest(response);
+        }
+        [HttpPost("reset-password")]
+        public async Task<ActionResult<Response>> ResetPassword(ResetPasswordDTO resetPasswordDTO)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+            var response = await _userService.ResetPassword(resetPasswordDTO);
+            return response.Flag ? Ok(response) : BadRequest(response);
+        }
     }
+        
 }

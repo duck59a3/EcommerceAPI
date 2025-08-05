@@ -4,7 +4,7 @@ using MyWebApi.Repository.IRepository;
 
 namespace MyWebApi.Repository
 {
-    public class VoucherUsageRepository : Repository<VoucherUsage>, IVoucherUsageRepository
+    public class VoucherUsageRepository : Repository<VoucherUse>, IVoucherUsageRepository
     {
         private readonly ApplicationDbContext _db;
         public VoucherUsageRepository(ApplicationDbContext db) : base(db) {

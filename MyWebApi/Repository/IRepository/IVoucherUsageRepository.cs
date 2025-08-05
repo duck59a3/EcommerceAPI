@@ -2,7 +2,7 @@
 
 namespace MyWebApi.Repository.IRepository
 {
-    public interface IVoucherUsageRepository : IRepository<VoucherUsage>
+    public interface IVoucherUsageRepository : IRepository<VoucherUse>
     {
     }
 }

@@ -15,6 +15,7 @@ namespace MyWebApi.Repository.IRepository
         IReviewRepository Reviews { get; }
         IVoucherRepository Vouchers { get; }
         IVoucherUsageRepository VouchersUsage { get; }
+        ITokenRepository RefreshTokens { get; }
         Task SaveAsync();
     }
 }

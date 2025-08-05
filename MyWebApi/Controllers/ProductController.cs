@@ -51,7 +51,7 @@ namespace MyWebApi.Controllers
             return single != null ? Ok(single) : NotFound($"Product with ID {id} not found.");
         }
         [HttpPost]
-        [Authorize(Roles = UserRole.Admin)] // Chỉ cho phép người dùng có vai trò Admin 
+        //[Authorize(Roles = UserRole.Admin)] // Chỉ cho phép người dùng có vai trò Admin 
         public async Task<ActionResult<Response>> CreateProduct(ProductDTO product)
         {
            if(!ModelState.IsValid)

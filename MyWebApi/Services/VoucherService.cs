@@ -23,14 +23,14 @@ namespace MyWebApi.Services
             _unitOfWork = unitOfWork;
             _db = db;
         }
-        public async Task<bool> CanUserUseVoucherAsync(int userId, int voucherId)
-        {
-            // Kiểm tra xem user đã sử dụng voucher này chưa
-            var hasUsed = await _db.VouchersUsage
-                .AnyAsync(vu => vu.UserId == userId && vu.VoucherId == voucherId);
+        //public async Task<bool> CanUserUseVoucherAsync(int userId, int voucherId)
+        //{
+        //    // Kiểm tra xem user đã sử dụng voucher này chưa
+        //    var hasUsed = await _db.VouchersUses
+        //        .AnyAsync(vu => vu.UserId == userId && vu.VoucherId == voucherId);
 
-            return !hasUsed;
-        }
+        //    return !hasUsed;
+        //}
 
         public async Task<Response> CreateVoucherAsync(CreateVoucherDTO createVoucherDto)
         {
@@ -182,7 +182,7 @@ namespace MyWebApi.Services
                 {
                     return new Response(false, "Voucher không tồn tại");
                 }
-                var voucherUsage = new VoucherUsage
+                var voucherUsage = new VoucherUse
                 {
                     VoucherId = voucherId,
                     UserId = userId,
@@ -256,15 +256,15 @@ namespace MyWebApi.Services
                 };
             }
             // Kiểm tra user có thể sử dụng voucher không
-            var canUse = await CanUserUseVoucherAsync(userId, voucher.Id);
-            if (!canUse)
-            {
-                return new VoucherDiscountResponse
-                {
-                    IsValid = false,
-                    Message = "Bạn đã sử dụng voucher này rồi"
-                };
-            }
+            //var canUse = await CanUserUseVoucherAsync(userId, voucher.Id);
+            //if (!canUse)
+            //{
+            //    return new VoucherDiscountResponse
+            //    {
+            //        IsValid = false,
+            //        Message = "Bạn đã sử dụng voucher này rồi"
+            //    };
+            //}
             int discountAmount = 0;
 
             if (voucher.Type == VoucherType.Percentage)
@@ -294,6 +294,11 @@ namespace MyWebApi.Services
                 Voucher = getVoucher!
             };
 
+        }
+
+        public Task<bool> CanUserUseVoucherAsync(int userId, int voucherId)
+        {
+            throw new NotImplementedException();
         }
     }
 }

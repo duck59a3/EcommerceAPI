@@ -60,6 +60,20 @@ namespace MyWebApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 2,
+                            Address = "abc",
+                            City = "aaa",
+                            CreatedAt = new DateTime(2025, 8, 5, 10, 24, 35, 285, DateTimeKind.Utc).AddTicks(1296),
+                            Email = "admin@gmail.com",
+                            Name = "Admin",
+                            Password = "$2a$11$zBh2eXD57XRypRGCAZmvoOCuA/BHAJMK9IKImpASpxeCrJmkKcmwa",
+                            PhoneNumber = "03313",
+                            Role = "Admin"
+                        });
                 });
 
             modelBuilder.Entity("MyWebApi.Models.Cart", b =>
@@ -417,6 +431,47 @@ namespace MyWebApi.Migrations
                     b.ToTable("ProductVideos");
                 });
 
+            modelBuilder.Entity("MyWebApi.Models.RefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUsed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JwtID")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
             modelBuilder.Entity("MyWebApi.Models.Review", b =>
                 {
                     b.Property<int>("Id")
@@ -510,40 +565,6 @@ namespace MyWebApi.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Vouchers");
-                });
-
-            modelBuilder.Entity("MyWebApi.Models.VoucherUsage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("DiscountAmount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UsedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VoucherId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("VoucherId");
-
-                    b.ToTable("VouchersUsage");
                 });
 
             modelBuilder.Entity("MyWebApi.Models.Cart", b =>
@@ -650,6 +671,17 @@ namespace MyWebApi.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("MyWebApi.Models.RefreshToken", b =>
+                {
+                    b.HasOne("MyWebApi.Models.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("MyWebApi.Models.Review", b =>
                 {
                     b.HasOne("MyWebApi.Models.Product", "Product")
@@ -669,33 +701,6 @@ namespace MyWebApi.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MyWebApi.Models.VoucherUsage", b =>
-                {
-                    b.HasOne("MyWebApi.Models.Order", "Order")
-                        .WithMany()
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MyWebApi.Models.AppUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MyWebApi.Models.Voucher", "Voucher")
-                        .WithMany("VoucherUsages")
-                        .HasForeignKey("VoucherId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-
-                    b.Navigation("User");
-
-                    b.Navigation("Voucher");
-                });
-
             modelBuilder.Entity("MyWebApi.Models.Cart", b =>
                 {
                     b.Navigation("CartItems");
@@ -711,11 +716,6 @@ namespace MyWebApi.Migrations
                     b.Navigation("Images");
 
                     b.Navigation("Videos");
-                });
-
-            modelBuilder.Entity("MyWebApi.Models.Voucher", b =>
-                {
-                    b.Navigation("VoucherUsages");
                 });
 #pragma warning restore 612, 618
         }

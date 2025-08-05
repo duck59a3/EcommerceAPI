@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using MyWebApi.DTOs;
 using MyWebApi.Models;
 
 namespace MyWebApi.Data
@@ -19,10 +20,35 @@ namespace MyWebApi.Data
                 new Category { Id = 3, Name = "Clothing", Description = "Apparel and accessories" }
             
             );
-            
+            string hash = BCrypt.Net.BCrypt.HashPassword("admin123");
+            modelBuilder.Entity<AppUser>().HasData(
+                new AppUser { Id = 2, Name = "Admin", Email = "admin@gmail.com", Password = hash, Role = "Admin", Address ="abc",PhoneNumber="03313", City="aaa" }
+                );
 
-                
-            
+            //        modelBuilder.Entity<VoucherUse>()
+            //   .HasOne(v => v.User)
+            //.WithMany(u => u.VoucherUsages)
+            //.HasForeignKey(v => v.UserId)
+            //.OnDelete(DeleteBehavior.Restrict)// hoặc NoAction
+            //        .OnDelete(DeleteBehavior.NoAction);
+
+            //        modelBuilder.Entity<VoucherUse>()
+            //            .HasOne(v => v.Voucher)
+            //            .WithMany(vc => vc.VoucherUsages)
+            //            .HasForeignKey(v => v.VoucherId)
+            //            .OnDelete(DeleteBehavior.Restrict);
+
+            //        modelBuilder.Entity<VoucherUse>()
+            //            .HasOne(v => v.Order)
+            //            .WithMany(o => o.VoucherUsages)
+            //            .HasForeignKey(v => v.OrderId)
+            //            .OnDelete(DeleteBehavior.Restrict)
+            //            .OnDelete(DeleteBehavior.NoAction);
+
+
+
+
+
 
 
         }
@@ -38,6 +64,6 @@ namespace MyWebApi.Data
         public DbSet<ProductVideo> ProductVideos { get; set; }
         public DbSet<Review> Reviews { get; set; }
         public DbSet<Voucher> Vouchers { get; set; }
-        public DbSet<VoucherUsage> VouchersUsage { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
     }
 }

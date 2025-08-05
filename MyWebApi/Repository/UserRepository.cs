@@ -6,11 +6,11 @@ using System.Linq.Expressions;
 
 namespace MyWebApi.Repository
 {
-    public class UserRepository : IUserRepository
+    public class UserRepository : Repository<AppUser>, IUserRepository
     {
         private readonly ApplicationDbContext _db;
         internal DbSet<AppUser> _users;
-        public UserRepository(ApplicationDbContext db) 
+        public UserRepository(ApplicationDbContext db)  : base(db)
         {
             _db = db;
             _users = _db.Set<AppUser>();
@@ -39,23 +39,25 @@ namespace MyWebApi.Repository
         }
         public async Task<AppUser> GetUserByIdAsync(int id)
         {
-            var user = await _users.FindAsync(id);
-     
-            return user is not null ? new AppUser
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                PhoneNumber = user.PhoneNumber,
-                Address = user.Address,
-                City = user.City,
-                Role = user.Role,
-            } : null!;
+            return await _users.FirstOrDefaultAsync(u => u.Id == id);
+            //var user = await _users.FindAsync(id);
+
+            //return user is not null ? new AppUser
+            //{
+            //    Id = user.Id,
+            //    Name = user.Name,
+            //    Email = user.Email,
+            //    PhoneNumber = user.PhoneNumber,
+            //    Address = user.Address,
+            //    City = user.City,
+            //    Role = user.Role,
+            //} : null!;
         }
 
         public Task UpdateUserAsync(AppUser user)
         {
-            throw new NotImplementedException();
+            _db.Users.Update(user);
+            return Task.CompletedTask;
         }
     }
 }

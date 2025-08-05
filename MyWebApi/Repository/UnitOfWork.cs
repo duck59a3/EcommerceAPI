@@ -20,6 +20,7 @@ namespace MyWebApi.Repository
         public IReviewRepository Reviews { get; private set; }
         public IVoucherRepository Vouchers { get; private set; }
         public IVoucherUsageRepository VouchersUsage { get; private set; }
+        public ITokenRepository RefreshTokens { get; private set; }
 
         public UnitOfWork(ApplicationDbContext db)
         {
@@ -34,6 +35,7 @@ namespace MyWebApi.Repository
             Reviews = new ReviewRepository(_db);
             Vouchers = new VoucherRepository(_db);
             VouchersUsage = new VoucherUsageRepository(_db);
+            RefreshTokens = new TokenRepository(_db);
         }
 
        

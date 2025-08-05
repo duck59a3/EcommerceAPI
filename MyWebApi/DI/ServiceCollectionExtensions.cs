@@ -18,6 +18,7 @@ namespace MyWebApi.DI
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPaymentService, PaymentService>();
             services.AddScoped<ICloudinaryService, CloudinaryService>();
+            services.AddScoped<ITokenService, TokenService>();
             return services;
         }
     }

@@ -24,6 +24,6 @@ namespace MyWebApi.Models
         public bool IsActive { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public ICollection<VoucherUsage> VoucherUsages { get; set; } = new List<VoucherUsage>();
+        //public ICollection<VoucherUse> VoucherUsages { get; set; } = new List<VoucherUse>();
     }
 }

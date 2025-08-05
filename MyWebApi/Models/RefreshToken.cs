@@ -14,5 +14,6 @@ namespace MyWebApi.Models
         public DateTime ExpiresAt { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? RevokedAt { get; set; }
+        public string JwtID { get; set; }
     }
 }
