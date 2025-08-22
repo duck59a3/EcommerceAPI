@@ -1,3 +1,4 @@
+using Hangfire;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +29,10 @@ builder.Services.AddCors(options =>
 // Add services to the container.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfire(x =>
+    x.UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddHangfireServer();
+
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddStackExchangeRedisCache(options =>
@@ -117,6 +122,7 @@ StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:SecretKey"
 app.UseMiddleware<GlobalException>();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseHangfireDashboard(); // Truy c?p t?i /hangfire
 
 app.MapControllers();
 app.UseSerilogRequestLogging();

@@ -101,11 +101,12 @@ namespace MyWebApi.Providers
             }
         }
 
-        public async Task<PaymentResponse> HandleCallbackAsync(Payment payment, string webhookPayload)
+        public async Task<PaymentResponse> HandleCallbackAsync(Payment payment)
         {
             try
             {
                 var request = _httpContextAccessor.HttpContext?.Request;
+                
                 if (request == null)
                 {
                     return new PaymentResponse
@@ -115,6 +116,11 @@ namespace MyWebApi.Providers
                         status = PaymentStatus.Failed,
                         Data = new { }
                     };
+                }
+                string webhookPayload;
+                using (var reader = new StreamReader(request.Body))
+                {
+                    webhookPayload = await reader.ReadToEndAsync();
                 }
                 var stripeSignature = request.Headers["Stripe-Signature"].FirstOrDefault();
                 if (string.IsNullOrEmpty(stripeSignature))

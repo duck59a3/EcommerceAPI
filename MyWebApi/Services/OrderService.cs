@@ -1,4 +1,5 @@
-﻿using MyWebApi.Data;
+﻿using Hangfire;
+using MyWebApi.Data;
 using MyWebApi.DTOs;
 using MyWebApi.DTOs.Conversions;
 using MyWebApi.DTOs.Requests;
@@ -95,7 +96,8 @@ namespace MyWebApi.Services
                 await _unitOfWork.Carts.RemoveAsync(cart); 
                 await _unitOfWork.SaveAsync();
                 await transaction.CommitAsync();
-                await _emailService.SendEmailAsync($"{cart.AppUser.Email}", "Thông báo", "Đơn hàng được đặt thành công");
+                BackgroundJob.Enqueue(() => _emailService.SendEmailAsync($"{cart.AppUser.Email}", "Thông báo", "Đơn hàng được đặt thành công"));
+                
                 return new Response(true, "Tạo đơn hàng từ giỏ hàng thành công.");
             }
             catch (Exception ex)

@@ -1,0 +1,22 @@
+services:
+  mywebapi:
+    image: ${DOCKER_REGISTRY-}mywebapi
+    container_name: mywebapi
+    build:
+      context: .
+      dockerfile: MyWebApi/Dockerfile
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "HoangVanDuc20072003"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1432:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+volumes:
+  sql_data:
+    

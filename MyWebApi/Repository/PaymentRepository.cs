@@ -26,11 +26,12 @@ namespace MyWebApi.Repository
 
         }
 
-        public async Task<Payment> UpdatePaymentAsync(Payment payment)
+        public Task UpdatePaymentAsync(Payment payment)
         {
             //var cacheKey = $"{_cachePrefix}{payment.Id}";
             //_cache.Set(cacheKey, payment, TimeSpan.FromHours(24));
-            return await Task.FromResult(payment);
+            _db.Payments.Update(payment);
+            return  Task.FromResult(payment);
         }
 
         public async Task<Payment> GetPaymentByIdAsync(int paymentId)
